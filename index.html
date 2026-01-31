@@ -1,0 +1,1393 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>不动产登记法规咨询平台</title>
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Font Awesome -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <!-- Three.js -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+    <!-- GSAP 动画库 -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.11.4/gsap.min.js"></script>
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        primary: {
+                            50: '#f0f5ff',
+                            100: '#e0ebff',
+                            200: '#c0d6ff',
+                            300: '#91b7fe',
+                            400: '#5b8def',
+                            500: '#3366e6',
+                            600: '#1e4fd4',
+                            700: '#1a3fad',
+                            800: '#1a368f',
+                            900: '#1a3175',
+                            950: '#0a2463',
+                        },
+                        secondary: {
+                            50: '#f5f7fa',
+                            100: '#ebeef5',
+                            200: '#d8deeb',
+                            300: '#b6bfd1',
+                            400: '#8a95b3',
+                            500: '#6b7794',
+                            600: '#56607a',
+                            700: '#485068',
+                            800: '#3e4455',
+                            900: '#363a45',
+                            950: '#22252d',
+                        },
+                        accent: {
+                            gold: '#E6AF2E',
+                            goldLight: '#F7D488',
+                            goldDark: '#C99425',
+                        }
+                    },
+                    fontFamily: {
+                        sans: ['Noto Sans SC', 'sans-serif'],
+                        serif: ['Noto Serif SC', 'serif'],
+                    },
+                    boxShadow: {
+                        'card': '0 4px 6px -1px rgba(10, 36, 99, 0.1), 0 2px 4px -1px rgba(10, 36, 99, 0.06)',
+                        'card-hover': '0 10px 15px -3px rgba(10, 36, 99, 0.1), 0 4px 6px -2px rgba(10, 36, 99, 0.05)',
+                    }
+                }
+            }
+        }
+    </script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Noto+Sans+SC:wght@300;13522738201&family=Noto+Serif+SC:wght@400;700&display=swap');
+
+        html {
+            scroll-behavior: smooth;
+        }
+
+        body {
+            font-family: 'Noto Sans SC', sans-serif;
+        }
+
+        .legal-serif {
+            font-family: 'Noto Serif SC', serif;
+        }
+
+        .text-shadow {
+            text-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+        }
+
+        .bg-gradient-primary {
+            background: linear-gradient(135deg, #0A2463 0%, #1A3FAD 100%);
+        }
+
+        .bg-gradient-gold {
+            background: linear-gradient(135deg, #E6AF2E 0%, #C99425 100%);
+        }
+
+        .transition-all-300 {
+            transition: all 0.3s ease;
+        }
+
+        .card-hover {
+            transition: all 0.3s ease;
+        }
+
+        .card-hover:hover {
+            transform: translateY(-5px);
+        }
+
+        /* 3D背景容器 */
+        #bg-canvas {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            z-index: -1;
+        }
+
+        /* 滚动条样式 */
+        ::-webkit-scrollbar {
+            width: 8px;
+        }
+
+        ::-webkit-scrollbar-track {
+            background: #f1f1f1;
+        }
+
+        ::-webkit-scrollbar-thumb {
+            background: #0A2463;
+            border-radius: 4px;
+        }
+
+        ::-webkit-scrollbar-thumb:hover {
+            background: #1A3FAD;
+        }
+
+        /* 聊天框样式 */
+        .chat-container {
+            max-height: 400px;
+            overflow-y: auto;
+        }
+
+        .chat-message {
+            margin-bottom: 1rem;
+            padding: 0.75rem 1rem;
+            border-radius: 0.5rem;
+            max-width: 80%;
+        }
+
+        .user-message {
+            background-color: #E0EBFF;
+            margin-left: auto;
+            border-top-right-radius: 0;
+        }
+
+        .bot-message {
+            background-color: #F5F7FA;
+            margin-right: auto;
+            border-top-left-radius: 0;
+        }
+
+        /* 法规文本样式 */
+        .regulation-text {
+            line-height: 1.8;
+        }
+
+        .regulation-title {
+            font-weight: 700;
+            margin-top: 1.5rem;
+            margin-bottom: 0.75rem;
+        }
+
+        .regulation-chapter {
+            font-weight: 600;
+            margin-top: 1.25rem;
+            margin-bottom: 0.5rem;
+        }
+
+        .regulation-article {
+            margin-bottom: 0.75rem;
+        }
+
+        /* 加载动画 */
+        .loading {
+            display: inline-block;
+            position: relative;
+            width: 80px;
+            height: 20px;
+        }
+
+        .loading div {
+            position: absolute;
+            top: 8px;
+            width: 13px;
+            height: 13px;
+            border-radius: 50%;
+            background: #0A2463;
+            animation-timing-function: cubic-bezier(0, 1, 1, 0);
+        }
+
+        .loading div:nth-child(1) {
+            left: 8px;
+            animation: loading1 0.6s infinite;
+        }
+
+        .loading div:nth-child(2) {
+            left: 8px;
+            animation: loading2 0.6s infinite;
+        }
+
+        .loading div:nth-child(3) {
+            left: 32px;
+            animation: loading2 0.6s infinite;
+        }
+
+        .loading div:nth-child(4) {
+            left: 56px;
+            animation: loading3 0.6s infinite;
+        }
+
+        @keyframes loading1 {
+            0% {
+                transform: scale(0);
+            }
+            100% {
+                transform: scale(1);
+            }
+        }
+
+        @keyframes loading3 {
+            0% {
+                transform: scale(1);
+            }
+            100% {
+                transform: scale(0);
+            }
+        }
+
+        @keyframes loading2 {
+            0% {
+                transform: translate(0, 0);
+            }
+            100% {
+                transform: translate(24px, 0);
+            }
+        }
+
+        /* 响应式调整 */
+        @media (max-width: 768px) {
+            .desktop-menu {
+                display: none;
+            }
+
+            .mobile-menu {
+                display: block;
+            }
+        }
+
+        @media (min-width: 769px) {
+            .desktop-menu {
+                display: block;
+            }
+
+            .mobile-menu {
+                display: none;
+            }
+        }
+    </style>
+</head>
+<body class="bg-gray-50 text-gray-800">
+    <!-- 3D背景 -->
+    <canvas id="bg-canvas"></canvas>
+
+    <!-- 顶部导航栏 -->
+    <header class="bg-gradient-primary text-white shadow-md fixed w-full top-0 z-50">
+        <div class="container mx-auto px-4 py-3 flex justify-between items-center">
+            <div class="flex items-center space-x-2">
+                <i class="fas fa-landmark text-2xl text-accent-gold"></i>
+                <h1 class="text-xl font-bold">不动产登记法规咨询平台</h1>
+            </div>
+            
+            <!-- 桌面端导航 -->
+            <nav class="desktop-menu">
+                <ul class="flex space-x-6">
+                    <li><a href="#home" class="hover:text-accent-gold transition-all-300">首页</a></li>
+                    <li><a href="#consultation" class="hover:text-accent-gold transition-all-300">智能咨询</a></li>
+                    <li><a href="#regulations" class="hover:text-accent-gold transition-all-300">法规全文</a></li>
+                    <li><a href="#faq" class="hover:text-accent-gold transition-all-300">常见问题</a></li>
+                </ul>
+            </nav>
+            
+            <!-- 移动端菜单按钮 -->
+            <button id="mobile-menu-button" class="mobile-menu text-white focus:outline-none">
+                <i class="fas fa-bars text-xl"></i>
+            </button>
+        </div>
+        
+        <!-- 移动端导航菜单 -->
+        <div id="mobile-menu" class="mobile-menu hidden bg-primary-900">
+            <ul class="container mx-auto px-4 py-2">
+                <li><a href="#home" class="block py-2 hover:text-accent-gold transition-all-300">首页</a></li>
+                <li><a href="#consultation" class="block py-2 hover:text-accent-gold transition-all-300">智能咨询</a></li>
+                <li><a href="#regulations" class="block py-2 hover:text-accent-gold transition-all-300">法规全文</a></li>
+                <li><a href="#faq" class="block py-2 hover:text-accent-gold transition-all-300">常见问题</a></li>
+            </ul>
+        </div>
+    </header>
+
+    <!-- 主要内容区 -->
+    <main class="container mx-auto px-4 pt-24 pb-12">
+        <!-- 首页部分 -->
+        <section id="home" class="min-h-[80vh] flex flex-col justify-center py-12">
+            <div class="grid md:grid-cols-2 gap-8 items-center">
+                <div class="space-y-6">
+                    <h2 class="text-4xl md:text-5xl font-bold text-primary-950 text-shadow">
+                        专业解答<span class="text-primary-700">不动产登记</span>法规问题
+                    </h2>
+                    <p class="text-lg text-gray-700">
+                        基于2024年《不动产登记暂行条例》及其实施细则，提供专业、准确的法律咨询服务，
+                        帮助您了解不动产登记相关法规，解答常见问题。
+                    </p>
+                    <div class="flex flex-wrap gap-4">
+                        <a href="#consultation" class="bg-gradient-primary text-white px-6 py-3 rounded-lg shadow-lg hover:shadow-xl transition-all-300 flex items-center">
+                            <i class="fas fa-comments mr-2"></i>
+                            立即咨询
+                        </a>
+                        <a href="#regulations" class="bg-white text-primary-950 border border-primary-950 px-6 py-3 rounded-lg shadow hover:shadow-lg transition-all-300 flex items-center">
+                            <i class="fas fa-book-open mr-2"></i>
+                            查看法规
+                        </a>
+                    </div>
+                </div>
+                <div class="hidden md:block">
+                    <div class="relative">
+                        <div class="absolute inset-0 bg-primary-950 rounded-full opacity-10 blur-3xl"></div>
+                        <img src="https://img.freepik.com/free-vector/real-estate-concept-illustration_114360-5398.jpg" alt="不动产登记" class="relative z-10 rounded-lg shadow-2xl w-full">
+                    </div>
+                </div>
+            </div>
+            
+            <!-- 服务特点 -->
+            <div class="grid md:grid-cols-3 gap-6 mt-16">
+                <div class="bg-white p-6 rounded-lg shadow-card card-hover">
+                    <div class="w-14 h-14 bg-primary-100 rounded-full flex items-center justify-center mb-4">
+                        <i class="fas fa-robot text-2xl text-primary-700"></i>
+                    </div>
+                    <h3 class="text-xl font-semibold mb-2">智能法律咨询</h3>
+                    <p class="text-gray-600">输入您的问题，AI法律助手将为您提供专业解答，匹配相关法条</p>
+                </div>
+                
+                <div class="bg-white p-6 rounded-lg shadow-card card-hover">
+                    <div class="w-14 h-14 bg-primary-100 rounded-full flex items-center justify-center mb-4">
+                        <i class="fas fa-scroll text-2xl text-primary-700"></i>
+                    </div>
+                    <h3 class="text-xl font-semibold mb-2">法规全文查询</h3>
+                    <p class="text-gray-600">提供2024年《不动产登记暂行条例》及其实施细则完整内容，支持章节检索</p>
+                </div>
+                
+                <div class="bg-white p-6 rounded-lg shadow-card card-hover">
+                    <div class="w-14 h-14 bg-primary-100 rounded-full flex items-center justify-center mb-4">
+                        <i class="fas fa-question-circle text-2xl text-primary-700"></i>
+                    </div>
+                    <h3 class="text-xl font-semibold mb-2">常见问题库</h3>
+                    <p class="text-gray-600">汇总不动产登记高频咨询问题及标准答案，快速解决您的疑惑</p>
+                </div>
+            </div>
+        </section>
+
+        <!-- 智能咨询部分 -->
+        <section id="consultation" class="py-16">
+            <div class="text-center mb-12">
+                <h2 class="text-3xl font-bold text-primary-950 mb-4">智能法律咨询</h2>
+                <p class="text-gray-600 max-w-2xl mx-auto">
+                    输入您关于不动产登记的问题，AI法律助手将为您提供专业解答，并引用相关法条支持
+                </p>
+            </div>
+            
+            <div class="max-w-4xl mx-auto bg-white rounded-xl shadow-lg overflow-hidden">
+                <div class="p-6">
+                    <div class="chat-container bg-gray-50 rounded-lg p-4 mb-4" id="chat-container">
+                        <div class="chat-message bot-message">
+                            <p class="font-medium">您好！我是不动产登记法规AI助手，很高兴为您服务。</p>
+                            <p class="text-sm text-gray-600 mt-1">您可以咨询关于不动产登记的任何问题，我将根据2024年《不动产登记暂行条例》及其实施细则为您解答。</p>
+                        </div>
+                    </div>
+                    
+                    <div class="flex">
+                        <input type="text" id="user-input" placeholder="请输入您的问题..." class="flex-1 border border-gray-300 rounded-l-lg px-4 py-2 focus:outline-none focus:ring-2 focus:ring-primary-500">
+                        <button id="send-button" class="bg-gradient-primary text-white px-6 py-2 rounded-r-lg hover:bg-primary-800 transition-all-300">
+                            <i class="fas fa-paper-plane mr-2"></i>发送
+                        </button>
+                    </div>
+                    
+                    <div class="mt-4 text-sm text-gray-500">
+                        <p>示例问题：</p>
+                        <div class="flex flex-wrap gap-2 mt-2">
+                            <button class="example-question bg-gray-100 hover:bg-gray-200 px-3 py-1 rounded-full transition-all-300">什么是不动产登记？</button>
+                            <button class="example-question bg-gray-100 hover:bg-gray-200 px-3 py-1 rounded-full transition-all-300">如何申请不动产登记？</button>
+                            <button class="example-question bg-gray-100 hover:bg-gray-200 px-3 py-1 rounded-full transition-all-300">哪些情形可以单方申请登记？</button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- 法规全文部分 -->
+        <section id="regulations" class="py-16 bg-gray-50">
+            <div class="text-center mb-12">
+                <h2 class="text-3xl font-bold text-primary-950 mb-4">法规全文查询</h2>
+                <p class="text-gray-600 max-w-2xl mx-auto">
+                    提供2024年《不动产登记暂行条例》及其实施细则完整内容，支持章节检索
+                </p>
+            </div>
+            
+            <div class="max-w-5xl mx-auto">
+                <div class="bg-white rounded-xl shadow-lg overflow-hidden">
+                    <!-- 法规选择标签 -->
+                    <div class="flex border-b">
+                        <button id="regulation-tab" class="regulation-tab flex-1 py-4 px-6 text-center font-medium border-b-2 border-primary-700 text-primary-700">
+                            不动产登记暂行条例
+                        </button>
+                        <button id="implementation-tab" class="regulation-tab flex-1 py-4 px-6 text-center font-medium border-b-2 border-transparent text-gray-500 hover:text-primary-700 hover:border-primary-300">
+                            实施细则
+                        </button>
+                    </div>
+                    
+                    <!-- 搜索框 -->
+                    <div class="p-4 border-b">
+                        <div class="relative">
+                            <input type="text" id="regulation-search" placeholder="搜索法规内容..." class="w-full border border-gray-300 rounded-lg pl-10 pr-4 py-2 focus:outline-none focus:ring-2 focus:ring-primary-500">
+                            <i class="fas fa-search absolute left-3 top-3 text-gray-400"></i>
+                        </div>
+                    </div>
+                    
+                    <!-- 法规内容区 -->
+                    <div class="p-6 max-h-[600px] overflow-y-auto" id="regulation-content">
+                        <!-- 法规内容将通过JavaScript动态加载 -->
+                        <div class="loading-container flex justify-center my-12">
+                            <div class="loading">
+                                <div></div>
+                                <div></div>
+                                <div></div>
+                                <div></div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- 常见问题部分 -->
+        <section id="faq" class="py-16">
+            <div class="text-center mb-12">
+                <h2 class="text-3xl font-bold text-primary-950 mb-4">常见问题库</h2>
+                <p class="text-gray-600 max-w-2xl mx-auto">
+                    汇总不动产登记高频咨询问题及标准答案，快速解决您的疑惑
+                </p>
+            </div>
+            
+            <div class="max-w-4xl mx-auto">
+                <!-- 问题分类标签 -->
+                <div class="flex flex-wrap gap-2 mb-8">
+                    <button class="faq-category-btn bg-primary-700 text-white px-4 py-2 rounded-full">全部</button>
+                    <button class="faq-category-btn bg-gray-200 text-gray-700 px-4 py-2 rounded-full">基本概念</button>
+                    <button class="faq-category-btn bg-gray-200 text-gray-700 px-4 py-2 rounded-full">登记程序</button>
+                    <button class="faq-category-btn bg-gray-200 text-gray-700 px-4 py-2 rounded-full">权利类型</button>
+                    <button class="faq-category-btn bg-gray-200 text-gray-700 px-4 py-2 rounded-full">证书管理</button>
+                </div>
+                
+                <!-- 问题列表 -->
+                <div class="space-y-4" id="faq-list">
+                    <!-- FAQ项目将通过JavaScript动态加载 -->
+                    <div class="loading-container flex justify-center my-12">
+                        <div class="loading">
+                            <div></div>
+                            <div></div>
+                            <div></div>
+                            <div></div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+    </main>
+
+    <!-- 底部信息 -->
+    <footer class="bg-primary-950 text-white py-8">
+        <div class="container mx-auto px-4">
+            <div class="grid md:grid-cols-3 gap-8">
+                <div>
+                    <h3 class="text-xl font-semibold mb-4">关于我们</h3>
+                    <p class="text-gray-300">
+                        不动产登记法规咨询平台致力于为公众提供专业、准确的不动产登记法规咨询服务，
+                        谢宗徒律师行政法律团队帮助您了解相关法规，维护自身合法权益。
+                    </p>
+                </div>
+                
+                <div>
+                    <h3 class="text-xl font-semibold mb-4">联系方式</h3>
+                    <ul class="space-y-2 text-gray-300">
+                        <li class="flex items-center">
+                            <i class="fas fa-envelope mr-2"></i>
+                            <span>2385512735@qq.com</span>
+                        </li>
+                        <li class="flex items-center">
+                            <i class="fas fa-phone mr-2"></i>
+                            <span>13522738201</span>
+                        </li>
+                        <li class="flex items-center">
+                            <i class="fas fa-map-marker-alt mr-2"></i>
+                            <span>北京市朝阳区东三环中路7号北京财富中心A座写字楼12层；电话：13522738201</span>
+                        </li>
+                    </ul>
+                </div>
+                
+                <div>
+                    <h3 class="text-xl font-semibold mb-4">相关链接</h3>
+                    <ul class="space-y-2">
+                        <li><a href="#" class="text-gray-300 hover:text-accent-gold transition-all-300">自然资源部官网</a></li>
+                        <li><a href="#" class="text-gray-300 hover:text-accent-gold transition-all-300">中国政府网</a></li>
+                        <li><a href="#" class="text-gray-300 hover:text-accent-gold transition-all-300">法律法规数据库</a></li>
+                    </ul>
+                </div>
+            </div>
+            
+            <div class="border-t border-gray-700 mt-8 pt-6 text-center text-gray-400">
+                <p>&copy; 2024 不动产登记法规咨询平台 版权所有</p>
+            </div>
+        </div>
+    </footer>
+
+    <!-- 返回顶部按钮 -->
+    <button id="back-to-top" class="fixed bottom-6 right-6 bg-primary-700 text-white w-12 h-12 rounded-full flex items-center justify-center shadow-lg opacity-0 invisible transition-all-300">
+        <i class="fas fa-arrow-up"></i>
+    </button>
+
+    <!-- JavaScript -->
+    <script>
+        // 页面加载完成后执行
+        document.addEventListener('DOMContentLoaded', function() {
+            // 初始化3D背景
+            initThreeBackground();
+            
+            // 移动端菜单切换
+            const mobileMenuButton = document.getElementById('mobile-menu-button');
+            const mobileMenu = document.getElementById('mobile-menu');
+            
+            mobileMenuButton.addEventListener('click', function() {
+                mobileMenu.classList.toggle('hidden');
+            });
+            
+            // 平滑滚动
+            document.querySelectorAll('a[href^="#"]').forEach(anchor => {
+                anchor.addEventListener('click', function(e) {
+                    e.preventDefault();
+                    
+                    const targetId = this.getAttribute('href');
+                    const targetElement = document.querySelector(targetId);
+                    
+                    if (targetElement) {
+                        window.scrollTo({
+                            top: targetElement.offsetTop - 80,
+                            behavior: 'smooth'
+                        });
+                        
+                        // 如果是移动端，点击后关闭菜单
+                        if (window.innerWidth < 768) {
+                            mobileMenu.classList.add('hidden');
+                        }
+                    }
+                });
+            });
+            
+            // 返回顶部按钮
+            const backToTopButton = document.getElementById('back-to-top');
+            
+            window.addEventListener('scroll', function() {
+                if (window.pageYOffset > 300) {
+                    backToTopButton.classList.remove('opacity-0', 'invisible');
+                    backToTopButton.classList.add('opacity-100', 'visible');
+                } else {
+                    backToTopButton.classList.remove('opacity-100', 'visible');
+                    backToTopButton.classList.add('opacity-0', 'invisible');
+                }
+            });
+            
+            backToTopButton.addEventListener('click', function() {
+                window.scrollTo({
+                    top: 0,
+                    behavior: 'smooth'
+                });
+            });
+            
+            // 初始化智能咨询功能
+            initChatSystem();
+            
+            // 初始化法规查询功能
+            initRegulationSystem();
+            
+            // 初始化常见问题功能
+            initFaqSystem();
+        });
+
+        // 3D背景初始化
+        function initThreeBackground() {
+            const canvas = document.getElementById('bg-canvas');
+            const scene = new THREE.Scene();
+            const camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
+            
+            const renderer = new THREE.WebGLRenderer({
+                canvas: canvas,
+                alpha: true,
+                antialias: true
+            });
+            renderer.setSize(window.innerWidth, window.innerHeight);
+            renderer.setPixelRatio(window.devicePixelRatio);
+            
+            // 创建粒子
+            const particlesGeometry = new THREE.BufferGeometry();
+            const particlesCount = 1500;
+            
+            const posArray = new Float32Array(particlesCount * 3);
+            
+            for (let i = 0; i < particlesCount * 3; i++) {
+                posArray[i] = (Math.random() - 0.5) * 10;
+            }
+            
+            particlesGeometry.setAttribute('position', new THREE.BufferAttribute(posArray, 3));
+            
+            const particlesMaterial = new THREE.PointsMaterial({
+                size: 0.005,
+                color: 0x0A2463,
+                transparent: true,
+                opacity: 0.8
+            });
+            
+            const particlesMesh = new THREE.Points(particlesGeometry, particlesMaterial);
+            scene.add(particlesMesh);
+            
+            camera.position.z = 5;
+            
+            // 动画循环
+            function animate() {
+                requestAnimationFrame(animate);
+                
+                particlesMesh.rotation.y += 0.0005;
+                particlesMesh.rotation.x += 0.0002;
+                
+                renderer.render(scene, camera);
+            }
+            
+            animate();
+            
+            // 窗口大小调整
+            window.addEventListener('resize', function() {
+                camera.aspect = window.innerWidth / window.innerHeight;
+                camera.updateProjectionMatrix();
+                renderer.setSize(window.innerWidth, window.innerHeight);
+            });
+        }
+
+        // 智能咨询系统初始化
+        function initChatSystem() {
+            const chatContainer = document.getElementById('chat-container');
+            const userInput = document.getElementById('user-input');
+            const sendButton = document.getElementById('send-button');
+            const exampleQuestions = document.querySelectorAll('.example-question');
+            
+            // 示例问题点击事件
+            exampleQuestions.forEach(button => {
+                button.addEventListener('click', function() {
+                    userInput.value = this.textContent;
+                    userInput.focus();
+                });
+            });
+            
+            // 发送消息函数
+            function sendMessage() {
+                const message = userInput.value.trim();
+                
+                if (message === '') return;
+                
+                // 添加用户消息
+                addMessage(message, 'user');
+                
+                // 清空输入框
+                userInput.value = '';
+                
+                // 显示加载状态
+                showLoading();
+                
+                // 模拟AI回复延迟
+                setTimeout(() => {
+                    // 移除加载状态
+                    removeLoading();
+                    
+                    // 添加AI回复
+                    const response = getAIResponse(message);
+                    addMessage(response.text, 'bot', response.laws);
+                }, 1000);
+            }
+            
+            // 添加消息到聊天框
+            function addMessage(text, sender, laws = []) {
+                const messageDiv = document.createElement('div');
+                messageDiv.className = `chat-message ${sender}-message`;
+                
+                let messageContent = `<p>${text}</p>`;
+                
+                // 如果有相关法条，添加法条引用
+                if (laws.length > 0) {
+                    messageContent += '<div class="mt-2 text-xs text-primary-700">';
+                    messageContent += '<p class="font-medium">相关法条：</p>';
+                    laws.forEach(law => {
+                        messageContent += `<p>${law}</p>`;
+                    });
+                    messageContent += '</div>';
+                }
+                
+                messageDiv.innerHTML = messageContent;
+                chatContainer.appendChild(messageDiv);
+                
+                // 滚动到底部
+                chatContainer.scrollTop = chatContainer.scrollHeight;
+            }
+            
+            // 显示加载状态
+            function showLoading() {
+                const loadingDiv = document.createElement('div');
+                loadingDiv.className = 'chat-message bot-message loading-message';
+                loadingDiv.innerHTML = `
+                    <div class="flex space-x-2">
+                        <div class="w-2 h-2 bg-primary-700 rounded-full animate-bounce" style="animation-delay: 0s"></div>
+                        <div class="w-2 h-2 bg-primary-700 rounded-full animate-bounce" style="animation-delay: 0.2s"></div>
+                        <div class="w-2 h-2 bg-primary-700 rounded-full animate-bounce" style="animation-delay: 0.4s"></div>
+                    </div>
+                `;
+                chatContainer.appendChild(loadingDiv);
+                
+                // 滚动到底部
+                chatContainer.scrollTop = chatContainer.scrollHeight;
+            }
+            
+            // 移除加载状态
+            function removeLoading() {
+                const loadingMessage = document.querySelector('.loading-message');
+                if (loadingMessage) {
+                    loadingMessage.remove();
+                }
+            }
+            
+            // 获取AI回复
+            function getAIResponse(message) {
+                // 关键词匹配
+                message = message.toLowerCase();
+                
+                if (message.includes('什么是') && message.includes('不动产登记')) {
+                    return {
+                        text: '不动产登记是指不动产登记机构依法将不动产权利归属和其他法定事项记载于不动产登记簿的行为。根据《不动产登记暂行条例》第二条，不动产是指土地、海域以及房屋、林木等定着物。',
+                        laws: ['《不动产登记暂行条例》第二条']
+                    };
+                }
+                else if (message.includes('如何申请') || message.includes('申请流程')) {
+                    return {
+                        text: '申请不动产登记的基本流程如下：\n1. 准备申请材料，包括登记申请书、身份证明、不动产权属来源证明等\n2. 向不动产所在地的县级人民政府不动产登记机构提出申请\n3. 不动产登记机构受理申请并进行查验\n4. 符合条件的，予以登记并核发不动产权属证书',
+                        laws: ['《不动产登记暂行条例》第十四条、第十六条、第十七条']
+                    };
+                }
+                else if (message.includes('单方申请') || message.includes('单方面申请')) {
+                    return {
+                        text: '根据《不动产登记暂行条例》第十四条，以下情形可以由当事人单方申请不动产登记：\n1. 尚未登记的不动产首次申请登记的\n2. 继承、接受遗赠取得不动产权利的\n3. 人民法院、仲裁委员会生效的法律文书或者人民政府生效的决定等设立、变更、转让、消灭不动产权利的\n4. 权利人姓名、名称或者自然状况发生变化，申请变更登记的\n5. 不动产灭失或者权利人放弃不动产权利，申请注销登记的\n6. 申请更正登记或者异议登记的\n7. 法律、行政法规规定可以由当事人单方申请的其他情形',
+                        laws: ['《不动产登记暂行条例》第十四条']
+                    };
+                }
+                else if (message.includes('需要哪些材料') || message.includes('需要什么材料')) {
+                    return {
+                        text: '根据《不动产登记暂行条例》第十六条，申请人应当提交下列材料，并对申请材料的真实性负责：\n1. 登记申请书\n2. 申请人、代理人身份证明材料、授权委托书\n3. 相关的不动产权属来源证明材料、登记原因证明文件、不动产权属证书\n4. 不动产界址、空间界限、面积等材料\n5. 与他人利害关系的说明材料\n6. 法律、行政法规以及本条例实施细则规定的其他材料',
+                        laws: ['《不动产登记暂行条例》第十六条']
+                    };
+                }
+                else if (message.includes('不予登记') || message.includes('不受理')) {
+                    return {
+                        text: '根据《不动产登记暂行条例》第二十二条，有下列情形之一的，不动产登记机构应当不予登记，并书面告知申请人：\n1. 违反法律、行政法规规定的\n2. 存在尚未解决的权属争议的\n3. 申请登记的不动产权利超过规定期限的\n4. 法律、行政法规规定不予登记的其他情形',
+                        laws: ['《不动产登记暂行条例》第二十二条']
+                    };
+                }
+                else if (message.includes('办理时间') || message.includes('多久') || message.includes('时限')) {
+                    return {
+                        text: '根据《不动产登记暂行条例》第二十条，不动产登记机构应当自受理登记申请之日起30个工作日内办结不动产登记手续，法律另有规定的除外。需要注意的是，公告所需时间不计算在登记办理期限内。',
+                        laws: ['《不动产登记暂行条例》第二十条']
+                    };
+                }
+                else if (message.includes('不动产权证') || message.includes('证书')) {
+                    return {
+                        text: '不动产权证书是权利人享有该不动产物权的证明。根据《不动产登记暂行条例》第二十一条，登记事项自记载于不动产登记簿时完成登记。不动产登记机构完成登记，应当依法向申请人核发不动产权属证书或者登记证明。电子证书证明与纸质证书证明具有同等法律效力。',
+                        laws: ['《不动产登记暂行条例》第二十一条', '《不动产登记暂行条例实施细则》第二十条']
+                    };
+                }
+                else if (message.includes('查询') || message.includes('查看')) {
+                    return {
+                        text: '根据《不动产登记暂行条例》第二十七条，权利人、利害关系人可以依法查询、复制不动产登记资料，不动产登记机构应当提供。有关国家机关可以依照法律、行政法规的规定查询、复制与调查处理事项有关的不动产登记资料。查询时需提供身份证明等材料，具体要求可咨询当地不动产登记机构。',
+                        laws: ['《不动产登记暂行条例》第二十七条']
+                    };
+                }
+                else if (message.includes('居住权')) {
+                    return {
+                        text: '居住权是指居住权人有权按照合同约定，对他人的住宅享有占有、使用的用益物权。根据《民法典》第三百六十六条，居住权不得转让、继承。设立居住权的住宅不得出租，但是当事人另有约定的除外。居住权期限可由双方自行约定，居住权期限约定为终身的，居住权人死亡，居住权随之消灭。',
+                        laws: ['《民法典》第三百六十六条、第三百六十九条']
+                    };
+                }
+                else if (message.includes('共有') || message.includes('共同共有')) {
+                    return {
+                        text: '根据《不动产登记暂行条例实施细则》第十条，处分共有不动产申请登记的，应当经占份额三分之二以上的按份共有人或者全体共同共有人共同申请，但共有人另有约定的除外。按份共有人转让其享有的不动产份额，应当与受让人共同申请转移登记。',
+                        laws: ['《不动产登记暂行条例实施细则》第十条']
+                    };
+                }
+                else {
+                    return {
+                        text: '感谢您的咨询。您的问题可能需要更专业的分析。建议您提供更具体的信息，或者咨询当地不动产登记机构获取更准确的解答。您也可以尝试查看我们的法规全文或常见问题部分，获取更多相关信息。',
+                        laws: []
+                    };
+                }
+            }
+            
+            // 发送按钮点击事件
+            sendButton.addEventListener('click', sendMessage);
+            
+            // 输入框回车事件
+            userInput.addEventListener('keypress', function(e) {
+                if (e.key === 'Enter') {
+                    sendMessage();
+                }
+            });
+        }
+
+        // 法规查询系统初始化
+        function initRegulationSystem() {
+            const regulationTab = document.getElementById('regulation-tab');
+            const implementationTab = document.getElementById('implementation-tab');
+            const regulationContent = document.getElementById('regulation-content');
+            const regulationSearch = document.getElementById('regulation-search');
+            
+            let currentTab = 'regulation';
+            let searchTerm = '';
+            
+            // 加载法规内容
+            function loadRegulationContent() {
+                regulationContent.innerHTML = `
+                    <div class="loading-container flex justify-center my-12">
+                        <div class="loading">
+                            <div></div>
+                            <div></div>
+                            <div></div>
+                            <div></div>
+                        </div>
+                    </div>
+                `;
+                
+                setTimeout(() => {
+                    let content = '';
+                    
+                    if (currentTab === 'regulation') {
+                        content = getRegulationText();
+                    } else {
+                        content = getImplementationText();
+                    }
+                    
+                    // 如果有搜索词，进行过滤
+                    if (searchTerm) {
+                        content = filterContent(content, searchTerm);
+                    }
+                    
+                    regulationContent.innerHTML = content;
+                }, 500);
+            }
+            
+            // 获取条例文本
+            function getRegulationText() {
+                return `
+                    <div class="regulation-text legal-serif">
+                        <h3 class="regulation-title text-2xl text-center mb-6">不动产登记暂行条例</h3>
+                        <p class="text-center text-gray-500 mb-8">（2014年11月24日中华人民共和国国务院令第656号公布 根据2019年3月24日《国务院关于修改部分行政法规的决定》第一次修订 根据2024年3月10日《国务院关于修改和废止部分行政法规的决定》第二次修订）</p>
+                        
+                        <div class="regulation-chapter" id="chapter-1">第一章 总则</div>
+                        <div class="regulation-article" id="article-1">
+                            <span class="font-bold">第一条</span> 为整合不动产登记职责，规范登记行为，方便群众申请登记，保护权利人合法权益，根据《中华人民共和国物权法》等法律，制定本条例。
+                        </div>
+                        <div class="regulation-article" id="article-2">
+                            <span class="font-bold">第二条</span> 本条例所称不动产登记，是指不动产登记机构依法将不动产权利归属和其他法定事项记载于不动产登记簿的行为。
+                            <br>本条例所称不动产，是指土地、海域以及房屋、林木等定着物。
+                        </div>
+                        <div class="regulation-article" id="article-3">
+                            <span class="font-bold">第三条</span> 不动产首次登记、变更登记、转移登记、注销登记、更正登记、异议登记、预告登记、查封登记等，适用本条例。
+                        </div>
+                        <div class="regulation-article" id="article-4">
+                            <span class="font-bold">第四条</span> 国家实行不动产统一登记制度。
+                            <br>不动产登记遵循严格管理、稳定连续、方便群众的原则。
+                            <br>不动产权利人已经依法享有的不动产权利，不因登记机构和登记程序的改变而受到影响。
+                        </div>
+                        <div class="regulation-article" id="article-5">
+                            <span class="font-bold">第五条</span> 下列不动产权利，依照本条例的规定办理登记：
+                            <br>（一）集体土地所有权；
+                            <br>（二）房屋等建筑物、构筑物所有权；
+                            <br>（三）森林、林木所有权；
+                            <br>（四）耕地、林地、草地等土地承包经营权；
+                            <br>（五）建设用地使用权；
+                            <br>（六）宅基地使用权；
+                            <br>（七）海域使用权；
+                            <br>（八）地役权；
+                            <br>（九）抵押权；
+                            <br>（十）法律规定需要登记的其他不动产权利。
+                        </div>
+                        <div class="regulation-article" id="article-6">
+                            <span class="font-bold">第六条</span> 国务院国土资源主管部门负责指导、监督全国不动产登记工作。
+                            <br>县级以上地方人民政府应当确定一个部门为本行政区域的不动产登记机构，负责不动产登记工作，并接受上级人民政府不动产登记主管部门的指导、监督。
+                        </div>
+                        <div class="regulation-article" id="article-7">
+                            <span class="font-bold">第七条</span> 不动产登记由不动产所在地的县级人民政府不动产登记机构办理；直辖市、设区的市人民政府可以确定本级不动产登记机构统一办理所属各区的不动产登记。
+                            <br>跨县级行政区域的不动产登记，由所跨县级行政区域的不动产登记机构分别办理。不能分别办理的，由所跨县级行政区域的不动产登记机构协商办理；协商不成的，由共同的上一级人民政府不动产登记主管部门指定办理。
+                            <br>国务院确定的重点国有林区的森林、林木和林地，国务院批准项目用海、用岛，中央国家机关使用的国有土地等不动产登记，由国务院国土资源主管部门会同有关部门规定。
+                        </div>
+                        
+                        <div class="regulation-chapter" id="chapter-2">第二章 不动产登记簿</div>
+                        <div class="regulation-article" id="article-8">
+                            <span class="font-bold">第八条</span> 不动产以不动产单元为基本单位进行登记。不动产单元具有唯一编码。
+                            <br>不动产登记机构应当按照国务院国土资源主管部门的规定设立统一的不动产登记簿。
+                            <br>不动产登记簿应当记载以下事项：
+                            <br>（一）不动产的坐落、界址、空间界限、面积、用途等自然状况；
+                            <br>（二）不动产权利的主体、类型、内容、来源、期限、权利变化等权属状况；
+                            <br>（三）涉及不动产权利限制、提示的事项；
+                            <br>（四）其他相关事项。
+                        </div>
+                        <div class="regulation-article" id="article-9">
+                            <span class="font-bold">第九条</span> 不动产登记簿应当采用电子介质，暂不具备条件的，可以采用纸质介质。不动产登记机构应当明确不动产登记簿唯一、合法的介质形式。
+                            <br>不动产登记簿采用电子介质的，应当定期进行异地备份，并具有唯一、确定的纸质转化形式。
+                        </div>
+                        <div class="regulation-article" id="article-10">
+                            <span class="font-bold">第十条</span> 不动产登记机构应当依法将各类登记事项准确、完整、清晰地记载于不动产登记簿。任何人不得损毁不动产登记簿，除依法予以更正外不得修改登记事项。
+                        </div>
+                        <div class="regulation-article" id="article-11">
+                            <span class="font-bold">第十一条</span> 不动产登记工作人员应当具备与不动产登记工作相适应的专业知识和业务能力。
+                            <br>不动产登记机构应当加强对不动产登记工作人员的管理和专业技术培训。
+                        </div>
+                        <div class="regulation-article" id="article-12">
+                            <span class="font-bold">第十二条</span> 不动产登记机构应当指定专人负责不动产登记簿的保管，并建立健全相应的安全责任制度。
+                            <br>采用纸质介质不动产登记簿的，应当配备必要的防盗、防火、防渍、防有害生物等安全保护设施。
+                            <br>采用电子介质不动产登记簿的，应当配备专门的存储设施，并采取信息网络安全防护措施。
+                        </div>
+                        <div class="regulation-article" id="article-13">
+                            <span class="font-bold">第十三条</span> 不动产登记簿由不动产登记机构永久保存。不动产登记簿损毁、灭失的，不动产登记机构应当依据原有登记资料予以重建。
+                            <br>行政区域变更或者不动产登记机构职能调整的，应当及时将不动产登记簿移交相应的不动产登记机构。
+                        </div>
+                        
+                        <div class="regulation-chapter" id="chapter-3">第三章 登记程序</div>
+                        <div class="regulation-article" id="article-14">
+                            <span class="font-bold">第十四条</span> 因买卖、设定抵押权等申请不动产登记的，应当由当事人双方共同申请。
+                            <br>属于下列情形之一的，可以由当事人单方申请：
+                            <br>（一）尚未登记的不动产首次申请登记的；
+                            <br>（二）继承、接受遗赠取得不动产权利的；
+                            <br>（三）人民法院、仲裁委员会生效的法律文书或者人民政府生效的决定等设立、变更、转让、消灭不动产权利的；
+                            <br>（四）权利人姓名、名称或者自然状况发生变化，申请变更登记的；
+                            <br>（五）不动产灭失或者权利人放弃不动产权利，申请注销登记的；
+                            <br>（六）申请更正登记或者异议登记的；
+                            <br>（七）法律、行政法规规定可以由当事人单方申请的其他情形。
+                        </div>
+                        <div class="regulation-article" id="article-15">
+                            <span class="font-bold">第十五条</span> 当事人或者其代理人应当向不动产登记机构申请不动产登记。
+                            <br>不动产登记机构将申请登记事项记载于不动产登记簿前，申请人可以撤回登记申请。
+                        </div>
+                        <div class="regulation-article" id="article-16">
+                            <span class="font-bold">第十六条</span> 申请人应当提交下列材料，并对申请材料的真实性负责：
+                            <br>（一）登记申请书；
+                            <br>（二）申请人、代理人身份证明材料、授权委托书；
+                            <br>（三）相关的不动产权属来源证明材料、登记原因证明文件、不动产权属证书；
+                            <br>（四）不动产界址、空间界限、面积等材料；
+                            <br>（五）与他人利害关系的说明材料；
+                            <br>（六）法律、行政法规以及本条例实施细则规定的其他材料。
+                            <br>不动产登记机构应当在办公场所和门户网站公开申请登记所需材料目录和示范文本等信息。
+                        </div>
+                        <div class="regulation-article" id="article-17">
+                            <span class="font-bold">第十七条</span> 不动产登记机构收到不动产登记申请材料，应当分别按照下列情况办理：
+                            <br>（一）属于登记职责范围，申请材料齐全、符合法定形式，或者申请人按照要求提交全部补正申请材料的，应当受理并书面告知申请人；
+                            <br>（二）申请材料存在可以当场更正的错误的，应当告知申请人当场更正，申请人当场更正后，应当受理并书面告知申请人；
+                            <br>（三）申请材料不齐全或者不符合法定形式的，应当当场书面告知申请人不予受理并一次性告知需要补正的全部内容；
+                            <br>（四）申请登记的不动产不属于本机构登记范围的，应当当场书面告知申请人不予受理并告知申请人向有登记权的机构申请。
+                            <br>不动产登记机构未当场书面告知申请人不予受理的，视为受理。
+                        </div>
+                        <div class="regulation-article" id="article-18">
+                            <span class="font-bold">第十八条</span> 不动产登记机构受理不动产登记申请的，应当按照下列要求进行查验：
+                            <br>（一）不动产界址、空间界限、面积等材料与申请登记的不动产状况是否一致；
+                            <br>（二）有关证明材料、文件与申请登记的内容是否一致；
+                            <br>（三）登记申请是否违反法律、行政法规规定。
+                        </div>
+                        <div class="regulation-article" id="article-19">
+                            <span class="font-bold">第十九条</span> 属于下列情形之一的，不动产登记机构可以对申请登记的不动产进行实地查看：
+                            <br>（一）房屋等建筑物、构筑物所有权首次登记；
+                            <br>（二）在建建筑物抵押权登记；
+                            <br>（三）因不动产灭失导致的注销登记；
+                            <br>（四）不动产登记机构认为需要实地查看的其他情形。
+                            <br>对可能存在权属争议，或者可能涉及他人利害关系的登记申请，不动产登记机构可以向申请人、利害关系人或者有关单位进行调查。
+                            <br>不动产登记机构进行实地查看或者调查时，申请人、被调查人应当予以配合。
+                        </div>
+                        <div class="regulation-article" id="article-20">
+                            <span class="font-bold">第二十条</span> 不动产登记机构应当自受理登记申请之日起30个工作日内办结不动产登记手续，法律另有规定的除外。
+                        </div>
+                        <div class="regulation-article" id="article-21">
+                            <span class="font-bold">第二十一条</span> 登记事项自记载于不动产登记簿时完成登记。
+                            <br>不动产登记机构完成登记，应当依法向申请人核发不动产权属证书或者登记证明。
+                        </div>
+                        <div class="regulation-article" id="article-22">
+                            <span class="font-bold">第二十二条</span> 登记申请有下列情形之一的，不动产登记机构应当不予登记，并书面告知申请人：
+                            <br>（一）违反法律、行政法规规定的；
+                            <br>（二）存在尚未解决的权属争议的；
+                            <br>（三）申请登记的不动产权利超过规定期限的；
+                            <br>（四）法律、行政法规规定不予登记的其他情形。
+                        </div>
+                    `;
+            }
+            
+            // 获取实施细则文本
+            function getImplementationText() {
+                return `
+                    <div class="regulation-text legal-serif">
+                        <h3 class="regulation-title text-2xl text-center mb-6">不动产登记暂行条例实施细则</h3>
+                        <p class="text-center text-gray-500 mb-8">（2016年1月1日国土资源部令第63号公布 根据2019年7月16日自然资源部第2次部务会议《自然资源部关于第一批废止和修改的部门规章的决定》第一次修正 根据2024年5月9日自然资源部第2次部务会议《自然资源部关于第六批修改的部门规章的决定》第二次修正）</p>
+                        
+                        <div class="regulation-chapter" id="chapter-1">第一章 总则</div>
+                        <div class="regulation-article" id="article-1">
+                            <span class="font-bold">第一条</span> 为规范不动产登记行为，细化不动产统一登记制度，方便人民群众办理不动产登记，保护权利人合法权益，根据《不动产登记暂行条例》（以下简称《条例》），制定本实施细则。
+                        </div>
+                        <div class="regulation-article" id="article-2">
+                            <span class="font-bold">第二条</span> 不动产登记应当依照当事人的申请进行，但法律、行政法规以及本实施细则另有规定的除外。
+                            <br>房屋等建筑物、构筑物和森林、林木等定着物应当与其所依附的土地、海域一并登记，保持权利主体一致。
+                        </div>
+                        <div class="regulation-article" id="article-3">
+                            <span class="font-bold">第三条</span> 不动产登记机构依照《条例》第七条第二款的规定，协商办理或者接受指定办理跨县级行政区域不动产登记的，应当在登记完毕后将不动产登记簿记载的不动产权利人以及不动产坐落、界址、面积、用途、权利类型等登记结果告知不动产所跨区域的其他不动产登记机构。
+                        </div>
+                        <div class="regulation-article" id="article-4">
+                            <span class="font-bold">第四条</span> 国务院确定的重点国有林区的森林、林木和林地，由自然资源部受理并会同有关部门办理，依法向权利人核发不动产权属证书。
+                            <br>国务院批准的项目用海、用岛的登记，由自然资源部受理，依法向权利人核发不动产权属证书。
+                        </div>
+                        
+                        <div class="regulation-chapter" id="chapter-2">第二章 不动产登记簿</div>
+                        <div class="regulation-article" id="article-5">
+                            <span class="font-bold">第五条</span> 《条例》第八条规定的不动产单元，是指权属界线封闭且具有独立使用价值的空间。
+                            <br>没有房屋等建筑物、构筑物以及森林、林木定着物的，以土地、海域权属界线封闭的空间为不动产单元。
+                            <br>有房屋等建筑物、构筑物以及森林、林木定着物的，以该房屋等建筑物、构筑物以及森林、林木定着物与土地、海域权属界线封闭的空间为不动产单元。
+                            <br>前款所称房屋，包括独立成幢、权属界线封闭的空间，以及区分套、层、间等可以独立使用、权属界线封闭的空间。
+                        </div>
+                        <div class="regulation-article" id="article-6">
+                            <span class="font-bold">第六条</span> 不动产登记簿以宗地或者宗海为单位编成，一宗地或者一宗海范围内的全部不动产单元编入一个不动产登记簿。
+                        </div>
+                        <div class="regulation-article" id="article-7">
+                            <span class="font-bold">第七条</span> 不动产登记机构应当配备专门的不动产登记电子存储设施，采取信息网络安全防护措施，保证电子数据安全。
+                            <br>任何单位和个人不得擅自复制或者篡改不动产登记簿信息。
+                        </div>
+                        <div class="regulation-article" id="article-8">
+                            <span class="font-bold">第八条</span> 承担不动产登记审核、登簿的不动产登记工作人员应当熟悉相关法律法规，具备与其岗位相适应的不动产登记等方面的专业知识。
+                            <br>自然资源部会同有关部门组织开展对承担不动产登记审核、登簿的不动产登记工作人员的考核培训。
+                        </div>
+                        
+                        <div class="regulation-chapter" id="chapter-3">第三章 登记程序</div>
+                        <div class="regulation-article" id="article-9">
+                            <span class="font-bold">第九条</span> 申请不动产登记的，申请人应当填写登记申请书，并提交身份证明以及相关申请材料。
+                            <br>申请材料应当提供原件。因特殊情况不能提供原件的，可以提供复印件，复印件应当与原件保持一致。
+                            <br>通过互联网在线申请不动产登记的，应当通过符合国家规定的身份认证系统进行实名认证。申请人提交电子材料的，不再提交纸质材料。
+                        </div>
+                        <div class="regulation-article" id="article-10">
+                            <span class="font-bold">第十条</span> 处分共有不动产申请登记的，应当经占份额三分之二以上的按份共有人或者全体共同共有人共同申请，但共有人另有约定的除外。
+                            <br>按份共有人转让其享有的不动产份额，应当与受让人共同申请转移登记。
+                            <br>建筑区划内依法属于全体业主共有的不动产申请登记，依照本实施细则第三十六条的规定办理。
+                        </div>
+                        <div class="regulation-article" id="article-11">
+                            <span class="font-bold">第十一条</span> 无民事行为能力人、限制民事行为能力人申请不动产登记的，应当由其监护人代为申请。
+                            <br>监护人代为申请登记的，应当提供监护人与被监护人的身份证或者户口簿、有关监护关系等材料；因处分不动产而申请登记的，还应当提供为被监护人利益的书面保证。
+                            <br>父母之外的监护人处分未成年人不动产的，有关监护关系材料可以是人民法院指定监护的法律文书、经过公证的对被监护人享有监护权的材料或者其他材料。
+                        </div>
+                        <div class="regulation-article" id="article-12">
+                            <span class="font-bold">第十二条</span> 当事人可以委托他人代为申请不动产登记。
+                            <br>代理申请不动产登记的，代理人应当向不动产登记机构提供被代理人签字或者盖章的授权委托书。
+                            <br>自然人处分不动产，委托代理人申请登记的，应当与代理人共同到不动产登记机构现场签订授权委托书，但授权委托书经公证的除外。
+                            <br>境外申请人委托他人办理处分不动产登记的，其授权委托书应当按照国家有关规定办理认证或者公证；我国缔结或者参加的国际条约有不同规定的，适用该国际条约的规定，但我国声明保留的条款除外。
+                        </div>
+                        <div class="regulation-article" id="article-13">
+                            <span class="font-bold">第十三条</span> 申请登记的事项记载于不动产登记簿前，全体申请人提出撤回登记申请的，登记机构应当将登记申请书以及相关材料退还申请人。
+                        </div>
+                        <div class="regulation-article" id="article-14">
+                            <span class="font-bold">第十四条</span> 因继承、受遗赠取得不动产，当事人申请登记的，应当提交死亡证明材料、遗嘱或者全部法定继承人关于不动产分配的协议以及与被继承人的亲属关系材料等，也可以提交经公证的材料或者生效的法律文书。
+                        </div>
+                        <div class="regulation-article" id="article-15">
+                            <span class="font-bold">第十五条</span> 不动产登记机构受理不动产登记申请后，还应当对下列内容进行查验：
+                            <br>（一）申请人、委托代理人身份证明材料以及授权委托书与申请主体是否一致；
+                            <br>（二）权属来源材料或者登记原因文件与申请登记的内容是否一致；
+                            <br>（三）不动产界址、空间界限、面积等权籍调查成果是否完备，权属是否清楚、界址是否清晰、面积是否准确；
+                            <br>（四）法律、行政法规规定的完税或者缴费凭证是否齐全。
+                        </div>
+                        <div class="regulation-article" id="article-16">
+                            <span class="font-bold">第十六条</span> 不动产登记机构进行实地查看，重点查看下列情况：
+                            <br>（一）房屋等建筑物、构筑物所有权首次登记，查看房屋坐落及其建造完成等情况；
+                            <br>（二）在建建筑物抵押权登记，查看抵押的在建建筑物坐落及其建造等情况；
+                            <br>（三）因不动产灭失导致的注销登记，查看不动产灭失等情况。
+                        </div>
+                        <div class="regulation-article" id="article-17">
+                            <span class="font-bold">第十七条</span> 有下列情形之一的，不动产登记机构应当在登记事项记载于登记簿前进行公告，但涉及国家秘密的除外：
+                            <br>（一）政府组织的集体土地所有权登记；
+                            <br>（二）宅基地使用权及房屋所有权，集体建设用地使用权及建筑物、构筑物所有权，土地承包经营权等不动产权利的首次登记；
+                            <br>（三）依职权更正登记；
+                            <br>（四）依职权注销登记；
+                            <br>（五）法律、行政法规规定的其他情形。
+                            <br>公告应当在不动产登记机构门户网站以及不动产所在地等指定场所进行，公告期不少于15个工作日。公告所需时间不计算在登记办理期限内。公告期满无异议或者异议不成立的，应当及时记载于不动产登记簿。
+                        </div>
+                        <div class="regulation-article" id="article-18">
+                            <span class="font-bold">第十八条</span> 不动产登记公告的主要内容包括：
+                            <br>（一）拟予登记的不动产权利人的姓名或者名称；
+                            <br>（二）拟予登记的不动产坐落、面积、用途、权利类型等；
+                            <br>（三）提出异议的期限、方式和受理机构；
+                            <br>（四）需要公告的其他事项。
+                        </div>
+                        <div class="regulation-article" id="article-19">
+                            <span class="font-bold">第十九条</span> 当事人可以持人民法院、仲裁委员会的生效法律文书或者人民政府的生效决定单方申请不动产登记。
+                            <br>有下列情形之一的，不动产登记机构直接办理不动产登记：
+                            <br>（一）人民法院持生效法律文书和协助执行通知书要求不动产登记机构办理登记的；
+                            <br>（二）人民检察院、公安机关依据法律规定持协助查封通知书要求办理查封登记的；
+                            <br>（三）人民政府依法做出征收或者收回不动产权利决定生效后，要求不动产登记机构办理注销登记的；
+                            <br>（四）法律、行政法规规定的其他情形。
+                            <br>不动产登记机构认为登记事项存在异议的，应当依法向有关机关提出审查建议。
+                        </div>
+                        <div class="regulation-article" id="article-20">
+                            <span class="font-bold">第二十条</span> 不动产登记机构应当根据不动产登记簿，填写并核发不动产权属证书或者不动产登记证明。电子证书证明与纸质证书证明具有同等法律效力。
+                            <br>除办理抵押权登记、地役权登记和预告登记、异议登记，向申请人核发不动产登记证明外，不动产登记机构应当依法向权利人核发不动产权属证书。
+                            <br>不动产权属证书和不动产登记证明，应当加盖不动产登记机构登记专用章。
+                        </div>
+                    `;
+            }
+            
+            // 过滤内容
+            function filterContent(content, term) {
+                if (!term) return content;
+                
+                // 创建临时DOM元素来处理HTML
+                const tempDiv = document.createElement('div');
+                tempDiv.innerHTML = content;
+                
+                // 查找所有文本节点
+                const walk = document.createTreeWalker(tempDiv, NodeFilter.SHOW_TEXT, null, false);
+                let node;
+                const textNodes = [];
+                
+                while (node = walk.nextNode()) {
+                    textNodes.push(node);
+                }
+                
+                // 替换匹配的文本
+                textNodes.forEach(node => {
+                    if (node.textContent.toLowerCase().includes(term.toLowerCase())) {
+                        const parent = node.parentNode;
+                        const temp = document.createElement('div');
+                        temp.innerHTML = node.textContent.replace(
+                            new RegExp(`(${term})`, 'gi'),
+                            '<span class="bg-yellow-200">$1</span>'
+                        );
+                        
+                        while (temp.firstChild) {
+                            parent.insertBefore(temp.firstChild, node);
+                        }
+                        
+                        parent.removeChild(node);
+                    }
+                });
+                
+                return tempDiv.innerHTML;
+            }
+            
+            // 标签切换事件
+            regulationTab.addEventListener('click', function() {
+                if (currentTab !== 'regulation') {
+                    currentTab = 'regulation';
+                    
+                    regulationTab.classList.add('border-primary-700', 'text-primary-700');
+                    regulationTab.classList.remove('border-transparent', 'text-gray-500');
+                    
+                    implementationTab.classList.add('border-transparent', 'text-gray-500');
+                    implementationTab.classList.remove('border-primary-700', 'text-primary-700');
+                    
+                    loadRegulationContent();
+                }
+            });
+            
+            implementationTab.addEventListener('click', function() {
+                if (currentTab !== 'implementation') {
+                    currentTab = 'implementation';
+                    
+                    implementationTab.classList.add('border-primary-700', 'text-primary-700');
+                    implementationTab.classList.remove('border-transparent', 'text-gray-500');
+                    
+                    regulationTab.classList.add('border-transparent', 'text-gray-500');
+                    regulationTab.classList.remove('border-primary-700', 'text-primary-700');
+                    
+                    loadRegulationContent();
+                }
+            });
+            
+            // 搜索框事件
+            regulationSearch.addEventListener('input', function() {
+                searchTerm = this.value.trim();
+                loadRegulationContent();
+            });
+            
+            // 初始加载
+            loadRegulationContent();
+        }
+
+        // 常见问题系统初始化
+        function initFaqSystem() {
+            const faqCategoryBtns = document.querySelectorAll('.faq-category-btn');
+            const faqList = document.getElementById('faq-list');
+            
+            let currentCategory = '全部';
+            
+            // FAQ数据
+            const faqData = [
+                {
+                    id: 1,
+                    question: '什么是不动产登记？',
+                    answer: '不动产登记是指不动产登记机构依法将不动产权利归属和其他法定事项记载于不动产登记簿的行为。根据《不动产登记暂行条例》第二条，不动产是指土地、海域以及房屋、林木等定着物。',
+                    category: '基本概念',
+                    law: '《不动产登记暂行条例》第二条'
+                },
+                {
+                    id: 2,
+                    question: '为什么要进行不动产登记？',
+                    answer: '不动产统一登记的意义在于：一是提高资源资产利用效益和社会管理效益；二是保障登记安全，权利主体行使物权权利更加方便；三是强化政府责任，提高登记质量，增强不动产登记的严肃性、权威性和公信力。对普通民众来说，可以减少办事环节，提高工作效率，保障不动产交易安全。',
+                    category: '基本概念',
+                    law: ''
+                },
+                {
+                    id: 3,
+                    question: '哪些权利需要办理不动产登记？',
+                    answer: '《不动产登记暂行条例》规定，共有十类不动产权属纳入登记，分别为：集体土地所有权；房屋等建筑物、构筑物所有权；森林、林木所有权；耕地、林地、草地等土地承包经营权；建设用地使用权；宅基地使用权；海域使用权；地役权；抵押权；法律规定需要登记的其他不动产权利。',
+                    category: '权利类型',
+                    law: '《不动产登记暂行条例》第五条'
+                },
+                {
+                    id: 4,
+                    question: '如何申请不动产登记？',
+                    answer: '申请不动产登记的基本流程如下：1. 准备申请材料，包括登记申请书、身份证明、不动产权属来源证明等；2. 向不动产所在地的县级人民政府不动产登记机构提出申请；3. 不动产登记机构受理申请并进行查验；4. 符合条件的，予以登记并核发不动产权属证书。',
+                    category: '登记程序',
+                    law: '《不动产登记暂行条例》第十四条、第十六条、第十七条'
+                },
+                {
+                    id: 5,
+                    question: '申请不动产登记需要提交哪些材料？',
+                    answer: '根据《不动产登记暂行条例》第十六条，申请人应当提交下列材料，并对申请材料的真实性负责：1. 登记申请书；2. 申请人、代理人身份证明材料、授权委托书；3. 相关的不动产权属来源证明材料、登记原因证明文件、不动产权属证书；4. 不动产界址、空间界限、面积等材料；5. 与他人利害关系的说明材料；6. 法律、行政法规以及本条例实施细则规定的其他材料。',
+                    category: '登记程序',
+                    law: '《不动产登记暂行条例》第十六条'
+                },
+                {
+                    id: 6,
+                    question: '哪些情形可以单方申请不动产登记？',
+                    answer: '根据《不动产登记暂行条例》第十四条，以下情形可以由当事人单方申请不动产登记：1. 尚未登记的不动产首次申请登记的；2. 继承、接受遗赠取得不动产权利的；3. 人民法院、仲裁委员会生效的法律文书或者人民政府生效的决定等设立、变更、转让、消灭不动产权利的；4. 权利人姓名、名称或者自然状况发生变化，申请变更登记的；5. 不动产灭失或者权利人放弃不动产权利，申请注销登记的；6. 申请更正登记或者异议登记的；7. 法律、行政法规规定可以由当事人单方申请的其他情形。',
+                    category: '登记程序',
+                    law: '《不动产登记暂行条例》第十四条'
+                },
+                {
+                    id: 7,
+                    question: '不动产登记的办理时限是多久？',
+                    answer: '根据《不动产登记暂行条例》第二十条，不动产登记机构应当自受理登记申请之日起30个工作日内办结不动产登记手续，法律另有规定的除外。需要注意的是，公告所需时间不计算在登记办理期限内。',
+                    category: '登记程序',
+                    law: '《不动产登记暂行条例》第二十条'
+                },
+                {
+                    id: 8,
+                    question: '哪些情形下不动产登记机构不予登记？',
+                    answer: '根据《不动产登记暂行条例》第二十二条，有下列情形之一的，不动产登记机构应当不予登记，并书面告知申请人：1. 违反法律、行政法规规定的；2. 存在尚未解决的权属争议的；3. 申请登记的不动产权利超过规定期限的；4. 法律、行政法规规定不予登记的其他情形。',
+                    category: '登记程序',
+                    law: '《不动产登记暂行条例》第二十二条'
+                },
+                {
+                    id: 9,
+                    question: '不动产权证书有什么用？',
+                    answer: '不动产权证书是权利人享有该不动产物权的证明。根据《民法典》的规定，"不动产权属证书是权利人享有该不动产物权的证明。"权利人申请登记，领取《不动产权证书》，表明了权利人的不动产权利可以得到法律的保护。权利人也能够根据证书记载的内容，及时便捷地掌握自己的不动产财产状况，有效便捷地开展有关交易，保护和实现自己的不动产合法权益。',
+                    category: '证书管理',
+                    law: '《民法典》第二百一十七条'
+                },
+                {
+                    id: 10,
+                    question: '不动产统一登记后，原有房产证、土地证是否有效？',
+                    answer: '不动产权利人已经依法享有的不动产权利，不因登记机构和登记程序的改变而受到影响。不动产统一登记实施后，无论是依法颁发的新版证书，还是因没有完成机构和职责整合，不具备颁发新证书而继续颁发旧证书的，以及条例实施前，有关部门依法颁发的各类证书，都继续有效，新版证书和旧版证书在一段时间内并行有效。等到依法办理转移变更登记时，逐步更换为新的不动产登记簿证。各地不得强制要求当事人更换《不动产权证书》和《登记证明》，不得增加群众和企业的负担。',
+                    category: '证书管理',
+                    law: '《不动产登记暂行条例》第四条'
+                },
+                {
+                    id: 11,
+                    question: '如何查询不动产登记信息？',
+                    answer: '根据《不动产登记暂行条例》第二十七条，权利人、利害关系人可以依法查询、复制不动产登记资料，不动产登记机构应当提供。有关国家机关可以依照法律、行政法规的规定查询、复制与调查处理事项有关的不动产登记资料。查询时需提供身份证明等材料，具体要求可咨询当地不动产登记机构。',
+                    category: '基本概念',
+                    law: '《不动产登记暂行条例》第二十七条'
+                },
+                {
+                    id: 12,
+                    question: '居住权可以转让、继承吗？',
+                    answer: '根据《民法典》第三百六十九条明确规定：居住权不得转让、继承。设立居住权的住宅不得出租，但是当事人另有约定的除外。',
+                    category: '权利类型',
+                    law: '《民法典》第三百六十九条'
+                }
+            ];
+            
+            // 加载FAQ列表
+            function loadFaqList() {
+                faqList.innerHTML = `
+                    <div class="loading-container flex justify-center my-12">
+                        <div class="loading">
+                            <div></div>
+                            <div></div>
+                            <div></div>
+                            <div></div>
+                        </div>
+                    </div>
+                `;
+                
+                setTimeout(() => {
+                    let filteredData = faqData;
+                    
+                    if (currentCategory !== '全部') {
+                        filteredData = faqData.filter(item => item.category === currentCategory);
+                    }
+                    
+                    let content = '';
+                    
+                    filteredData.forEach(item => {
+                        content += `
+                            <div class="bg-white rounded-lg shadow-md overflow-hidden">
+                                <button class="faq-question w-full text-left px-6 py-4 focus:outline-none flex justify-between items-center">
+                                    <span class="font-medium text-lg">${item.question}</span>
+                                    <i class="fas fa-chevron-down text-gray-500 transition-transform duration-300"></i>
+                                </button>
+                                <div class="faq-answer px-6 py-0 max-h-0 overflow-hidden transition-all duration-300">
+                                    <div class="pb-4">
+                                        <p class="text-gray-700">${item.answer}</p>
+                                        ${item.law ? `<p class="mt-2 text-sm text-primary-700">相关法条：${item.law}</p>` : ''}
+                                    </div>
+                                </div>
+                            </div>
+                        `;
+                    });
+                    
+                    faqList.innerHTML = content;
+                    
+                    // 添加FAQ点击事件
+                    const faqQuestions = document.querySelectorAll('.faq-question');
+                    
+                    faqQuestions.forEach(question => {
+                        question.addEventListener('click', function() {
+                            const answer = this.nextElementSibling;
+                            const icon = this.querySelector('i');
+                            
+                            if (answer.classList.contains('max-h-0')) {
+                                answer.classList.remove('max-h-0');
+                                answer.classList.add('max-h-96', 'py-4');
+                                icon.classList.add('transform', 'rotate-180');
+                            } else {
+                                answer.classList.add('max-h-0');
+                                answer.classList.remove('max-h-96', 'py-4');
+                                icon.classList.remove('transform', 'rotate-180');
+                            }
+                        });
+                    });
+                }, 500);
+            }
+            
+            // 分类按钮点击事件
+            faqCategoryBtns.forEach(btn => {
+                btn.addEventListener('click', function() {
+                    const category = this.textContent;
+                    
+                    if (currentCategory !== category) {
+                        currentCategory = category;
+                        
+                        // 更新按钮样式
+                        faqCategoryBtns.forEach(b => {
+                            b.classList.remove('bg-primary-700', 'text-white');
+                            b.classList.add('bg-gray-200', 'text-gray-700');
+                        });
+                        
+                        this.classList.remove('bg-gray-200', 'text-gray-700');
+                        this.classList.add('bg-primary-700', 'text-white');
+                        
+                        // 加载对应分类的FAQ
+                        loadFaqList();
+                    }
+                });
+            });
+            
+            // 初始加载
+            loadFaqList();
+        }
+    </script>
+</body>
+</html>
